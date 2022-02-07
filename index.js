@@ -1,10 +1,13 @@
 require("dotenv").config();
+const fs = require("fs");
 const express = require("express");
 const { Configuration, OpenAIApi } = require("openai");
 
 const mongoose = require("mongoose");
 
 const app = express();
+
+
 
 mongoose.connect(process.env.DATABASE_URL);
 const callbackUrl = "http://127.0.0.1:3000/callback";
@@ -29,11 +32,10 @@ const twitterClient = new twitter({
   clientSecret: process.env.CLIENT_SECRET,
 });
 
-
 const configuration = new Configuration({
-    organization: process.env.OPENAI_ORG,
-    apiKey: process.env.OPENAI_SECRET            
-})
+  organization: process.env.OPENAI_ORG,
+  apiKey: process.env.OPENAI_SECRET,
+});
 const openai = new OpenAIApi(configuration);
 
 app.get("/", (req, res) => {
@@ -92,54 +94,47 @@ app.get("/callback", (req, res) => {
 
 //tweet
 app.get("/tweet", (req, res) => {
+
   tkn.find({}, (err, results) => {
     const refreshTokn = results[0].refreshTkn;
-   
 
     // const {
     //   client: refreshedClient,
     //   accessToken,
     //   refreshToken: newRefreshToken,
     // } =
-    
+
     twitterClient.refreshOAuth2Token(refreshTokn).then((x) => {
-     
       tkn.findOneAndUpdate(
         { refreshTkn: refreshTokn },
-        { accessTkn: x.accessToken, refreshTkn: x.refreshToken }, {
-            overwrite: true
-        }, () => {
+        { accessTkn: x.accessToken, refreshTkn: x.refreshToken },
+        {
+          overwrite: true,
+        },
+        () => {
+          fs.readFile("./topics.txt", "utf-8", (err, fileData) => {
+            const parseData = fileData.split("\n");
+            const stuff = parseData[Math.floor(Math.random() * parseData.length)];
+            console.log(stuff);
+            const nextTweet = openai
+              .createCompletion("text-davinci-001", {
+                prompt: `tweet ${stuff}`,
+                max_tokens: 60,
+              })
+              .then((bot) => {
+                console.log(bot.data.choices[0].text);
+                x.client.v2.tweet(bot.data.choices[0].text);
+                res.send(bot.data.choices[0].text);
+              });
+          });
 
-
-            const nextTweet = openai.createCompletion('text-davinci-001', {
-              prompt: 'some cool tweet for the boys',
-              max_tokens: 64,
-            }).then(bot => {
-
-              console.log(bot.data.choices[0].text);
-
-              x.client.v2.tweet(
-                bot.data.choices[0].text
-              );
-  
-  
-              res.send(bot.data.choices[0].text)
-
-            })
-
-            
-
-
-
-
-          
-      //       console.log("retrieving user data");
-      //       x.client.v2.me().then((z) => {
-      //         res.send(z.data);
-      //   }
-      // );
-     
-      });
+          //       console.log("retrieving user data");
+          //       x.client.v2.me().then((z) => {
+          //         res.send(z.data);
+          //   }
+          // );
+        }
+      );
     });
   });
 });
