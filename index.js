@@ -1,9 +1,11 @@
+require("dotenv").config();
 const express = require('express');
 const openai = require('openai');
 
 const mongoose = require('mongoose');
 
 const app = express();
+
 mongoose.connect(process.env.DATABASE_URL)
 
 const dataSchema = new mongoose.Schema({
