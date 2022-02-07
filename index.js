@@ -4,22 +4,48 @@ const openai = require('openai');
 const mongoose = require('mongoose');
 
 const app = express();
+mongoose.connect(process.env.DATABASE_URL)
 
-// const tweeter = require("twitter-api-v2").default;
-// const twitterClient = new twitter({
-//     clientId: process.env.CLIENT_ID,
-//     clientSecret: process.env.CLIENT_SECRET
-// })
+const dataSchema = new mongoose.Schema({
+    name: String
+});
+
+const cred = mongoose.model("cred", dataSchema);
+
+const twitter = require("twitter-api-v2").default;
+const twitterClient = new twitter({
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET
+})
+
+app.get("/", (req, res) => {
+    res.send("twitter bot ib landing page")
+})
 
 
 //auth
 app.get("/auth", (req, res) => {
-    res.send("hi, this worked, great");
+    const { url, codeVerifier, state } = twitterClient.generateOAuth2AuthLink(
+        "/callback",
+        { scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access']}
+    )
+
+    const newData = new cred({
+        name: "codeVerifier and state",
+        CodeVerifier: codeVerifier,
+        State: state
+    })
+
+    newData.save();
+    
+    res.redirect(url)
+
+    //save code verifier and state
 })
 
 //callback
 app.get("/callback", (req, res) => {
-
+    
 })
 
 //tweet
