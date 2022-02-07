@@ -27,13 +27,13 @@ app.get("/", (req, res) => {
 app.get("/auth", (req, res) => {
     const { url, codeVerifier, state } = twitterClient.generateOAuth2AuthLink(
         "/callback",
-        { scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access']}
-    )
+        { scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'] }
+      );
 
     const newData = new cred({
         name: "codeVerifier and state",
-        CodeVerifier: codeVerifier,
-        State: state
+        codeVerifier,
+        state
     })
 
     newData.save();
