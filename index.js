@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const openai = require("openai");
+const { Configuration, OpenAIApi } = require("openai");
 
 const mongoose = require("mongoose");
 
@@ -28,6 +28,13 @@ const twitterClient = new twitter({
   clientId: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
 });
+
+
+const configuration = new Configuration({
+    organization: process.env.OPENAI_ORG,
+    apiKey: process.env.OPENAI_SECRET            
+})
+const openai = new OpenAIApi(configuration);
 
 app.get("/", (req, res) => {
   res.send("twitter bot ib landing page");
@@ -85,37 +92,56 @@ app.get("/callback", (req, res) => {
 
 //tweet
 app.get("/tweet", (req, res) => {
-  
-
   tkn.find({}, (err, results) => {
-    const refreshTkn = results[0].refreshTkn;
-    console.log(refreshTkn);
+    const refreshTokn = results[0].refreshTkn;
+   
 
     // const {
     //   client: refreshedClient,
     //   accessToken,
     //   refreshToken: newRefreshToken,
     // } =
+    
+    twitterClient.refreshOAuth2Token(refreshTokn).then((x) => {
+     
+      tkn.findOneAndUpdate(
+        { refreshTkn: refreshTokn },
+        { accessTkn: x.accessToken, refreshTkn: x.refreshToken }, {
+            overwrite: true
+        }, () => {
 
-    twitterClient.refreshOAuth2Token(refreshTkn).then(x => {
-      console.log("accesstoken", x.accessToken);
-      console.log("refreshtoken", x.refreshToken);
 
-      tkn.replaceOne(
-        { refreshTkn },
-        { accessTkn: x.accessToken, refreshTkn: x.refreshToken }
-      );
-        
-      x.client.v2.me().then(z => {
-        res.send(z.data)
+            const nextTweet = openai.createCompletion('text-davinci-001', {
+              prompt: 'some cool tweet for the boys',
+              max_tokens: 64,
+            }).then(bot => {
+
+              console.log(bot.data.choices[0].text);
+
+              x.client.v2.tweet(
+                bot.data.choices[0].text
+              );
+  
+  
+              res.send(bot.data.choices[0].text)
+
+            })
+
+            
+
+
+
+
+          
+      //       console.log("retrieving user data");
+      //       x.client.v2.me().then((z) => {
+      //         res.send(z.data);
+      //   }
+      // );
+     
       });
     });
-
- 
-
   });
-
-  
 });
 
 app.listen(process.env.PORT || 3000, () => {
