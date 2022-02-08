@@ -94,8 +94,7 @@ app.get("/callback", (req, res) => {
 
 //tweet
 app.get("/tweet", (req, res) => {
-  res.send("automatic tweeting now started")
- while(true){
+  
   tkn.find({}, (err, results) => {
     const refreshTokn = results[0].refreshTkn;
 
@@ -125,7 +124,7 @@ app.get("/tweet", (req, res) => {
               .then((bot) => {
                 console.log(bot.data.choices[0].text);
                 x.client.v2.tweet(bot.data.choices[0].text);
-                //res.send(bot.data.choices[0].text);
+                res.send(bot.data.choices[0].text);
               });
           });
 
@@ -139,8 +138,8 @@ app.get("/tweet", (req, res) => {
     });
   });
 
-  setTimeout(() => {}, 3600000)
- }
+  
+ 
 });
 
 app.listen(process.env.PORT || 3000, () => {
