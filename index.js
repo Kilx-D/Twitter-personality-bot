@@ -119,7 +119,7 @@ app.get("/tweet", (req, res) => {
             const nextTweet = openai
               .createCompletion("text-davinci-001", {
                 prompt: stuff,
-                max_tokens: 60,
+                max_tokens: 56,
               })
               .then((bot) => {
                 console.log(bot.data.choices[0].text);
